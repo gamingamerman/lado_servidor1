@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <form action="" name="crearProducto">
+        <input type="text" placeholder="nombre" name="nombre">
+        <input type="number" step="0.01" name="precio">
+        <input type="submit" value="crear">
+    </form>
+    <form action="" name="modificarProducto">
+        <input type="number" name="id" readonly>
+        <input type="text" placeholder="nombre" name="nombre">
+        <input type="number" step="0.01" name="precio">
+        <input type="submit" value="crear">
+    </form>
+    <table>
+        <thead>
+            <th>ID</th>
+            <th>Category</th>
+            <th>Product</th>
+            <th></th>
+        </thead>
+        <tbody id="products">
+
+        </tbody>
+    </table>
+</body>
+<script>
+    const LIST_PRODUCTS = document.querySelector('#products')
+    let products = []
+    updateList()
+    function updateList() {
+    LIST_PRODUCTS.innerHTML = "<tr><td colspan='3'>Cargando </td></tr>"
+    fetch('/api/products')
+    .then(res => res.json())
+    .then(data => {
+        console.log(data);
+        products = data
+        LIST_PRODUCTS.innerHTML = ""
+        data.forEach(p => {
+            showProduct(p);
+        });
+    });
+}
+
+    document.forms.crearProducto.addEventListener('submit', e => {
+        e.preventDefault();
+        console.log("creando...");
+        let producto = {
+            "name": document.forms.crearProducto.nombre.value,
+            "price": document.forms.crearProducto.precio.value
+        }
+
+        let myHeaders = new Headers();
+        myHeaders.append("Content-Type", "application/json");
+
+        let raw = JSON.stringify(producto);
+
+        let requestOptions = {
+            method: 'POST',
+            headers: myHeaders,
+            body: raw,
+            redirect: 'follow'
+        };
+
+        fetch("http://localhost:3000/api/products/", requestOptions)
+            .then(response => response.json())
+            .then(result => showProduct(result))
+            .catch(error => console.log('error', error));
+    })
+
+    function showProduct(p) {
+        let newLine = document.createElement('tr')
+        newLine.dataset.id = p.id;
+                newLine.innerHTML = `
+                <td>${p.id}</td>
+                <td>${p.category}</td>
+                <td>${p.name}</td>
+                <td><button onclick="deleteProduct(${p.id})">Borrar</button></td>
+                <td><button onclick="updateProduct(${p.id})">Modificar</button></td>
+                `;
+                LIST_PRODUCTS.append(newLine);
+        
+    }
+
+    function deleteProduct(id) {
+        fetch("http://localhost:3000/api/products/" + id, {method: "DELETE", redirect: 'follow'})
+            .then(response => response.json())
+            .then(product => {
+                let celdas = document.querySelectorAll('td');
+                let linea = [...celdas].filter(c => c.textContent == id)[0];
+                linea.parentElement.remove();
+                // let fila = document.querySelector(`tr[data id="${id}"]`);
+            })
+            .catch(error => console.log('error', error));
+    }
+
+    function updateProduct(id) {
+        let p = products.filter(p => p.id == id)[0];
+        const formulario = document.forms.modificarProducto
+        formulario.id.value = p.id;
+        formulario.nombre.value = p.name;
+        formulario.precio.value = p.price
+    }
+    
+</script>
+
+</html>
